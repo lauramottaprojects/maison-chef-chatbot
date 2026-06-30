@@ -87,46 +87,6 @@ body{
   letter-spacing:0.3px
 }
 .header .agent-badge span{font-weight:600}
-/* API Key Bar */
-.api-bar{
-  background:#FFF3E0;
-  padding:10px 16px;
-  display:flex;
-  gap:8px;
-  align-items:center;
-  flex-shrink:0;
-  border-bottom:1px solid var(--border)
-}
-.api-bar input{
-  flex:1;
-  border:1px solid var(--gold-light);
-  border-radius:var(--radius-sm);
-  padding:8px 12px;
-  font-size:13px;
-  background:#fff;
-  outline:none;
-  font-family:var(--font-sans)
-}
-.api-bar input:focus{border-color:var(--gold)}
-.api-bar button{
-  background:var(--primary);
-  color:#fff;
-  border:none;
-  border-radius:var(--radius-sm);
-  padding:8px 16px;
-  font-size:13px;
-  cursor:pointer;
-  font-family:var(--font-sans);
-  white-space:nowrap
-}
-.api-bar button:disabled{opacity:0.5;cursor:not-allowed}
-.api-bar .status{
-  font-size:12px;
-  color:var(--text-light);
-  white-space:nowrap
-}
-.api-bar .status.ok{color:#2E7D32}
-.api-bar .status.err{color:#C62828}
 /* Chat */
 .chat{
   flex:1;
@@ -315,12 +275,6 @@ body{
     <div class="agent-badge" id="agentBadge">Serving you: <span>Le Concierge</span></div>
   </div>
 
-  <div class="api-bar" id="apiBar">
-    <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key..." autocomplete="off">
-    <button id="apiKeyBtn">Save</button>
-    <span class="status" id="apiStatus"></span>
-  </div>
-
   <div class="chat" id="chat"></div>
 
   <div class="quick-actions" id="quickActions">
@@ -435,9 +389,11 @@ Key points:
   }
 };
 
+// ─── BACKEND URL ─────────────────────────────────────────
+const BACKEND_URL = 'https://YOUR-PROJECT.vercel.app/api/chat';
+
 // ─── STATE ───────────────────────────────────────────────
 let state = {
-  apiKey: localStorage.getItem('mch-api-key') || '',
   messages: [],
   currentAgent: 'concierge',
   processing: false
@@ -448,9 +404,6 @@ const $ = s => document.querySelector(s);
 const chat = $('#chat');
 const input = $('#msgInput');
 const sendBtn = $('#sendBtn');
-const apiInput = $('#apiKeyInput');
-const apiBtn = $('#apiKeyBtn');
-const apiStatus = $('#apiStatus');
 const agentBadge = $('#agentBadge');
 const clearBtn = $('#clearBtn');
 const quickBtns = document.querySelectorAll('[data-action]');
@@ -523,32 +476,25 @@ function hideTyping() {
   if (el) el.remove();
 }
 
-// ─── GEMINI API ──────────────────────────────────────────
-async function callGemini(contents, systemPrompt) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${state.apiKey}`;
-  const body = {
-    contents,
-    systemInstruction: { parts: [{ text: systemPrompt }] },
-    generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
-  };
-  const res = await fetch(url, {
+// ─── BACKEND API ─────────────────────────────────────────
+async function callBackend(contents, systemPrompt) {
+  const res = await fetch(BACKEND_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body: JSON.stringify({ contents, systemPrompt })
   });
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`API error ${res.status}: ${err}`);
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Server error ${res.status}`);
   }
   const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('Empty response from API');
-  return text;
+  if (!data.reply) throw new Error('Empty response from server');
+  return data.reply;
 }
 
 // ─── SEND ────────────────────────────────────────────────
 async function handleSend(userText) {
-  if (state.processing || !userText.trim() || !state.apiKey) return;
+  if (state.processing || !userText.trim()) return;
   state.processing = true;
   sendBtn.disabled = true;
   input.disabled = true;
@@ -576,11 +522,11 @@ async function handleSend(userText) {
     }
 
     hideTyping();
-    const reply = await callGemini(contents, agent.prompt);
+    const reply = await callBackend(contents, agent.prompt);
     addMessage('agent', reply, agentId);
   } catch (err) {
     hideTyping();
-    addMessage('agent', `Je suis désolé — I'm having trouble connecting right now. ${err.message.includes('API key') ? 'Please check your API key in the bar above.' : 'Please try again in a moment.'}`, 'concierge');
+    addMessage('agent', `Je suis désolé — I'm having trouble connecting right now. ${err.message}`, 'concierge');
     state.currentAgent = 'concierge';
     updateAgentBadge('concierge');
   }
@@ -601,11 +547,6 @@ function showWelcome() {
 
 // ─── INIT ────────────────────────────────────────────────
 function init() {
-  if (state.apiKey) {
-    apiInput.value = state.apiKey;
-    apiStatus.textContent = '✓ Key saved';
-    apiStatus.className = 'status ok';
-  }
   if (state.messages.length === 0) showWelcome();
   updateAgentBadge(state.currentAgent);
   render();
@@ -614,15 +555,6 @@ function init() {
 // ─── EVENT BINDING ───────────────────────────────────────
 sendBtn.addEventListener('click', () => handleSend(input.value));
 input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(input.value); } });
-
-apiBtn.addEventListener('click', () => {
-  const key = apiInput.value.trim();
-  if (!key) { apiStatus.textContent = 'Enter a key'; apiStatus.className = 'status err'; return; }
-  state.apiKey = key;
-  localStorage.setItem('mch-api-key', key);
-  apiStatus.textContent = '✓ Key saved';
-  apiStatus.className = 'status ok';
-});
 
 clearBtn.addEventListener('click', () => {
   if (!confirm('Clear all messages?')) return;
