@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maison Chef at Home — Concierge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#7A1A1A;
+  --primary-light:#9E2B2B;
+  --primary-dark:#5C1212;
+  --gold:#C4956A;
+  --gold-light:#DEC5A0;
+  --bg:#FDF6ED;
+  --bg-card:#FFFFFF;
+  --text:#2C1810;
+  --text-light:#8B7355;
+  --text-muted:#B8A58A;
+  --bot-bg:#F5EDE3;
+  --user-bg:#7A1A1A;
+  --user-text:#FFFFFF;
+  --border:#E8DDD0;
+  --shadow:0 2px 12px rgba(44,24,16,0.08);
+  --radius:12px;
+  --radius-sm:8px;
+  --font-serif:'Playfair Display',Georgia,serif;
+  --font-sans:'Inter',system-ui,-apple-system,sans-serif
+}
+html,body{height:100%}
+body{
+  font-family:var(--font-sans);
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  min-height:100vh;
+  padding:16px
+}
+.app{
+  width:100%;
+  max-width:480px;
+  height:calc(100vh - 32px);
+  max-height:820px;
+  background:var(--bg-card);
+  border-radius:20px;
+  box-shadow:var(--shadow);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  border:1px solid var(--border);
+  position:relative
+}
+/* Header */
+.header{
+  background:var(--primary);
+  color:#fff;
+  padding:18px 24px 14px;
+  text-align:center;
+  flex-shrink:0;
+  position:relative
+}
+.header h1{
+  font-family:var(--font-serif);
+  font-weight:600;
+  font-size:20px;
+  letter-spacing:0.5px
+}
+.header p{
+  font-size:13px;
+  opacity:0.85;
+  margin-top:2px;
+  font-weight:400
+}
+.header .agent-badge{
+  display:inline-block;
+  background:rgba(255,255,255,0.15);
+  padding:4px 14px;
+  border-radius:20px;
+  font-size:11px;
+  margin-top:6px;
+  letter-spacing:0.3px
+}
+.header .agent-badge span{font-weight:600}
+/* API Key Bar */
+.api-bar{
+  background:#FFF3E0;
+  padding:10px 16px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  flex-shrink:0;
+  border-bottom:1px solid var(--border)
+}
+.api-bar input{
+  flex:1;
+  border:1px solid var(--gold-light);
+  border-radius:var(--radius-sm);
+  padding:8px 12px;
+  font-size:13px;
+  background:#fff;
+  outline:none;
+  font-family:var(--font-sans)
+}
+.api-bar input:focus{border-color:var(--gold)}
+.api-bar button{
+  background:var(--primary);
+  color:#fff;
+  border:none;
+  border-radius:var(--radius-sm);
+  padding:8px 16px;
+  font-size:13px;
+  cursor:pointer;
+  font-family:var(--font-sans);
+  white-space:nowrap
+}
+.api-bar button:disabled{opacity:0.5;cursor:not-allowed}
+.api-bar .status{
+  font-size:12px;
+  color:var(--text-light);
+  white-space:nowrap
+}
+.api-bar .status.ok{color:#2E7D32}
+.api-bar .status.err{color:#C62828}
+/* Chat */
+.chat{
+  flex:1;
+  overflow-y:auto;
+  padding:16px 16px 8px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  scroll-behavior:smooth
+}
+.chat::-webkit-scrollbar{width:5px}
+.chat::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.msg{
+  max-width:88%;
+  padding:12px 16px;
+  border-radius:16px;
+  font-size:14px;
+  line-height:1.55;
+  animation:fadeIn 0.3s ease;
+  word-wrap:break-word
+}
+.msg.bot{
+  align-self:flex-start;
+  background:var(--bot-bg);
+  border-bottom-left-radius:4px;
+  color:var(--text)
+}
+.msg.bot .agent-label{
+  font-size:11px;
+  color:var(--gold);
+  font-weight:600;
+  margin-bottom:4px;
+  letter-spacing:0.3px
+}
+.msg.user{
+  align-self:flex-end;
+  background:var(--user-bg);
+  color:var(--user-text);
+  border-bottom-right-radius:4px
+}
+.msg.system{
+  align-self:center;
+  background:transparent;
+  color:var(--text-muted);
+  font-size:12px;
+  font-style:italic;
+  text-align:center;
+  max-width:100%
+}
+.msg.welcome{
+  align-self:flex-start;
+  background:linear-gradient(135deg,#7A1A1A,#9E2B2B);
+  color:#fff;
+  max-width:100%;
+  border-radius:16px;
+  border-bottom-left-radius:4px
+}
+.msg.welcome h3{
+  font-family:var(--font-serif);
+  font-weight:600;
+  font-size:18px;
+  margin-bottom:4px
+}
+.msg.welcome p{opacity:0.92;margin-top:4px;font-size:14px}
+/* Typing indicator */
+.typing{
+  align-self:flex-start;
+  background:var(--bot-bg);
+  border-radius:16px;
+  border-bottom-left-radius:4px;
+  padding:14px 20px;
+  display:flex;
+  gap:5px;
+  align-items:center
+}
+.typing span{
+  width:8px;height:8px;
+  border-radius:50%;
+  background:var(--text-muted);
+  animation:typing 1.4s infinite
+}
+.typing span:nth-child(2){animation-delay:0.2s}
+.typing span:nth-child(3){animation-delay:0.4s}
+@keyframes typing{
+  0%,60%,100%{opacity:0.3;transform:scale(1)}
+  30%{opacity:1;transform:scale(1.15)}
+}
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+/* Quick Actions */
+.quick-actions{
+  flex-shrink:0;
+  padding:8px 16px 4px;
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  justify-content:center
+}
+.quick-actions button{
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:6px 14px;
+  font-size:12px;
+  cursor:pointer;
+  color:var(--text);
+  font-family:var(--font-sans);
+  transition:all 0.2s;
+  white-space:nowrap
+}
+.quick-actions button:hover{
+  background:var(--primary);
+  color:#fff;
+  border-color:var(--primary)
+}
+/* Input */
+.input-area{
+  flex-shrink:0;
+  padding:8px 16px 16px;
+  display:flex;
+  gap:8px;
+  border-top:1px solid var(--border);
+  background:var(--bg-card)
+}
+.input-area input{
+  flex:1;
+  border:1px solid var(--border);
+  border-radius:24px;
+  padding:10px 16px;
+  font-size:14px;
+  outline:none;
+  font-family:var(--font-sans);
+  transition:border-color 0.2s
+}
+.input-area input:focus{border-color:var(--gold)}
+.input-area button{
+  width:42px;height:42px;
+  border-radius:50%;
+  border:none;
+  background:var(--primary);
+  color:#fff;
+  font-size:18px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:background 0.2s;
+  flex-shrink:0
+}
+.input-area button:hover{background:var(--primary-light)}
+.input-area button:disabled{opacity:0.4;cursor:not-allowed}
+/* Footer */
+.footer{
+  flex-shrink:0;
+  padding:6px 16px 10px;
+  display:flex;
+  justify-content:space-between;
+  font-size:11px;
+  color:var(--text-muted)
+}
+.footer button{
+  background:none;
+  border:none;
+  color:var(--text-muted);
+  cursor:pointer;
+  font-size:11px;
+  font-family:var(--font-sans);
+  text-decoration:underline;
+  padding:0
+}
+.footer button:hover{color:var(--primary)}
+/* Mobile */
+@media(max-width:520px){
+  body{padding:0}
+  .app{height:100vh;max-height:none;border-radius:0;border:none}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="header">
+    <h1>Maison Chef at Home</h1>
+    <p>Your Personal Concierge</p>
+    <div class="agent-badge" id="agentBadge">Serving you: <span>Le Concierge</span></div>
+  </div>
+
+  <div class="api-bar" id="apiBar">
+    <input type="password" id="apiKeyInput" placeholder="Enter your Gemini API key..." autocomplete="off">
+    <button id="apiKeyBtn">Save</button>
+    <span class="status" id="apiStatus"></span>
+  </div>
+
+  <div class="chat" id="chat"></div>
+
+  <div class="quick-actions" id="quickActions">
+    <button data-action="guests">+ Guests</button>
+    <button data-action="dietary">Dietary</button>
+    <button data-action="timing">Timing</button>
+    <button data-action="menu">Menu</button>
+    <button data-action="cancel">Cancel</button>
+  </div>
+
+  <div class="input-area">
+    <input type="text" id="msgInput" placeholder="Type your message..." autocomplete="off">
+    <button id="sendBtn">&#10148;</button>
+  </div>
+
+  <div class="footer">
+    <span>5 Expert Chefs · 1 Concierge</span>
+    <button id="clearBtn">Clear chat</button>
+  </div>
+</div>
+
+<script>
+// ─── AGENTS ──────────────────────────────────────────────
+const AGENTS = {
+  concierge: {
+    label: 'Le Concierge',
+    icon: '🎩',
+    prompt: `You are Le Concierge, the warm, knowledgeable face of Maison Chef at Home — a premium private-chef service for busy families, professionals, and small-group hosts.
+
+Your role: welcome guests, handle general inquiries, and direct specific requests to the right expert on your team (Chef de Service for bookings, Chef de Cuisine for dietary needs, Maître d'Hôtel for menus).
+
+Key points:
+- Maison Chef serves busy clients who value convenience and restaurant-quality dining at home.
+- The service handles custom menus, ingredient sourcing, allergy adaptations, and full cleanup.
+- 80% of customers worry about last-minute changes — be extra reassuring and emphasise flexibility.
+- Always be warm, professional, and prompt. Use occasional French culinary phrases naturally.
+- If a request is urgent or highly specific, acknowledge it confidently and explain exactly how the team will handle it.
+- Never make up specific policies — if unsure, offer to connect them with the right expert.`
+  },
+  booking: {
+    label: 'Le Chef de Service',
+    icon: '📋',
+    prompt: `You are Le Chef de Service, the booking and logistics specialist at Maison Chef at Home — a premium private-chef service.
+
+Your expertise: guest count changes, rescheduling, cancellations, and service logistics.
+
+Key points:
+- Last-minute changes are VERY common (80% of clients). Always respond with immediate reassurance: "Of course, we handle adjustments all the time — let's make this work perfectly."
+- Guest count increases: confirm the chef can scale portions (up to +50% with 24h notice; smaller increases possible same-day).
+- Guest count decreases: confirm no waste — leftovers are packed for guests.
+- Rescheduling: emphasise flexibility; the team coordinates with the chef's schedule.
+- Cancellations: full refund ≥48h notice; 50% refund 24-48h; within 24h, credit toward future booking.
+- Always ask for the booking reference/name/date to pull up details.
+- Confirm the change back to the client clearly: "So to confirm — your party will be 8 guests on Saturday 14 June at 7pm. Is that correct?"
+- Tone: warm, flexible, solution-oriented. "Maison Chef is built for life's little curveballs."
+- If you can't handle a request, escalate to Le Coordinateur.`
+  },
+  dietary: {
+    label: 'Le Chef de Cuisine',
+    icon: '👨‍🍳',
+    prompt: `You are Le Chef de Cuisine, the dietary and ingredient expert at Maison Chef at Home — a premium private-chef service.
+
+Your expertise: allergies, intolerances, dietary preferences, ingredient substitutions, and menu adaptation.
+
+Key points:
+- Always lead with reassurance: "Every dietary need is welcome in our kitchen. Let me understand exactly what we're working with."
+- Common allergens handled: gluten, dairy, nuts, shellfish, eggs, soy. The kitchen is NOT certified allergen-free but takes cross-contamination seriously with separate prep areas.
+- Dietary preferences: vegetarian, vegan, pescatarian, keto, paleo, halal (no pork, halal-certified meat available with notice).
+- Substitutions: almost any ingredient can be substituted. Ask about the specific dish or cuisine type.
+- When multiple guests have different needs, explain how the menu can be customised per course.
+- For severe allergies: recommend discussing directly with the chef beforehand. Note: "I'll flag this as a priority for Chef."
+- Keep tone: knowledgeable, precise, and genuinely passionate about food. "Food should delight everyone at the table."
+- Use French culinary terms naturally: mise en place, à la carte, amuse-bouche.
+- If a request is complex, promise to coordinate with the chef directly.`
+  },
+  menu: {
+    label: 'Le Maître d\'Hôtel',
+    icon: '🍷',
+    prompt: `You are Le Maître d'Hôtel, the menu and experience curator at Maison Chef at Home.
+
+Your expertise: menu planning, course selection, cuisine styles, wine pairing, occasion-specific dining.
+
+Key points:
+- Maison Chef offers: 2-course (starter + main), 3-course (starter + main + dessert), and 4-course (amuse + starter + main + dessert) formats.
+- Cuisines available: French (signature), Italian, Mediterranean, Asian-fusion, Modern Irish, American comfort.
+- The chef designs a custom menu after learning preferences. You help narrow down styles and dishes.
+- Always ask: number of courses, preferred cuisine(s), any dietary needs, and the occasion.
+- For celebrations (birthday, anniversary): the chef can add special touches — personalised desserts, plating, etc.
+- Wine pairing available on request (sourced from local vineyards). Recommend pairings per course.
+- "Let's design a menu that tells a story. Tell me about your guests and the occasion."
+- Tone: creative, sophisticated, warm. You're helping craft a memorable experience.
+- Suggest 2-3 options rather than overwhelming choices. "For a summer evening, I'd recommend the Mediterranean 3-course — grilled prawn starter, herb-crusted lamb, and a light lemon tart. How does that sound?"`
+  },
+  logistics: {
+    label: 'Le Coordinateur',
+    icon: '⏱️',
+    prompt: `You are Le Coordinateur, the logistics and operations specialist at Maison Chef at Home.
+
+Your expertise: timing adjustments, service setup requirements, special equipment, location details, and multi-day bookings.
+
+Key points:
+- Standard service: chef arrives 2-3 hours before serving time for setup and cooking.
+- Timing changes: most timing shifts are accommodated. Late dinners (after 9pm) may incur a small surcharge for the chef.
+- Early meals: chef can adjust arrival time accordingly.
+- Setup needs: the chef brings all ingredients and most equipment. Client provides: stove/oven access, counter space, sink access, and dining setup.
+- Special requests: the chef can work with limited kitchen setups — just let them know in advance.
+- Outdoor dining: possible with appropriate weather cover.
+- For large parties (12+): the chef may bring a sous-chef. This is included in the original quote.
+- Always confirm: address, exact timing, access instructions (parking, gate codes, etc.).
+- End of service: chef handles full cleanup and leaves the kitchen spotless. "You won't lift a finger."
+- Tone: ultra-organised, proactive, reassuring. "I'll make sure every detail is in place so you can relax and enjoy."`
+  }
+};
+
+// ─── STATE ───────────────────────────────────────────────
+let state = {
+  apiKey: localStorage.getItem('mch-api-key') || '',
+  messages: [],
+  currentAgent: 'concierge',
+  processing: false
+};
+
+// ─── DOM REFS ────────────────────────────────────────────
+const $ = s => document.querySelector(s);
+const chat = $('#chat');
+const input = $('#msgInput');
+const sendBtn = $('#sendBtn');
+const apiInput = $('#apiKeyInput');
+const apiBtn = $('#apiKeyBtn');
+const apiStatus = $('#apiStatus');
+const agentBadge = $('#agentBadge');
+const clearBtn = $('#clearBtn');
+const quickBtns = document.querySelectorAll('[data-action]');
+
+// ─── HELPERS ─────────────────────────────────────────────
+function classifyIntent(text) {
+  const t = text.toLowerCase();
+  if (/guest|people|cou(n)?t|\+ ?\d+|-\d+|extr?a?|fewer|plus|minus|bring|add|remove|person|attend|coming/i.test(t) && !/menu|dish/i.test(t)) return 'booking';
+  if (/allerg|diet|gluten|vegan|vegetarian|nut|dairy|lactos|egg|shellfish|intoleran|halal|kosh|paleo|keto|substitut|ingredient|sauce|oil|butter|cream|cheese|milk|soy|wheat/i.test(t)) return 'dietary';
+  if (/menu|dish|course|appetiser|appetizer|dessert|main|starter|entr(e|é)e|cuisine|french|italian|mediterranean|asian|wine|pairing|recommend|suggest|occasion|celebrat|birthday|anniversary/i.test(t) && !/guest|time|schedule/i.test(t)) return 'menu';
+  if (/time|schedule|reschedule|delay|late(r)?|earl(y|ier)|postpone|arrive|setup|equipment|parking|access|gate|code|outdoor|large|party|clean(up)?|hour/i.test(t)) return 'logistics';
+  return 'concierge';
+}
+
+function getAgent(id) { return AGENTS[id] || AGENTS.concierge; }
+
+function updateAgentBadge(id) {
+  const a = getAgent(id);
+  agentBadge.innerHTML = `Serving you: <span>${a.icon} ${a.label}</span>`;
+}
+
+// ─── CHAT RENDER ─────────────────────────────────────────
+function render() {
+  chat.innerHTML = '';
+  state.messages.forEach((m, i) => {
+    const div = document.createElement('div');
+    if (m.role === 'system') {
+      div.className = 'msg system';
+      div.textContent = m.text;
+    } else if (m.role === 'agent' && m._agent) {
+      div.className = `msg bot${i === 0 ? ' welcome' : ''}`;
+      if (i === 0) {
+        div.innerHTML = `<h3>Bienvenue!</h3><p>${m.text}</p>`;
+      } else {
+        if (m._agent !== state.messages[i-1]?._agent) {
+          const l = document.createElement('div');
+          l.className = 'agent-label';
+          l.textContent = `${getAgent(m._agent).icon} ${getAgent(m._agent).label}`;
+          div.appendChild(l);
+        }
+        div.appendChild(document.createTextNode(m.text));
+      }
+    } else {
+      div.className = 'msg user';
+      div.textContent = m.text;
+    }
+    chat.appendChild(div);
+  });
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function addMessage(role, text, agentId) {
+  const m = { role, text };
+  if (agentId) m._agent = agentId;
+  state.messages.push(m);
+  render();
+}
+
+function showTyping() {
+  const d = document.createElement('div');
+  d.className = 'typing';
+  d.id = 'typing-indicator';
+  d.innerHTML = '<span></span><span></span><span></span>';
+  chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function hideTyping() {
+  const el = document.getElementById('typing-indicator');
+  if (el) el.remove();
+}
+
+// ─── GEMINI API ──────────────────────────────────────────
+async function callGemini(contents, systemPrompt) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${state.apiKey}`;
+  const body = {
+    contents,
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
+  };
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`API error ${res.status}: ${err}`);
+  }
+  const data = await res.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error('Empty response from API');
+  return text;
+}
+
+// ─── SEND ────────────────────────────────────────────────
+async function handleSend(userText) {
+  if (state.processing || !userText.trim() || !state.apiKey) return;
+  state.processing = true;
+  sendBtn.disabled = true;
+  input.disabled = true;
+
+  const text = userText.trim();
+  input.value = '';
+  addMessage('user', text);
+
+  showTyping();
+
+  try {
+    const intent = classifyIntent(text);
+    const agentId = intent;
+    state.currentAgent = agentId;
+    updateAgentBadge(agentId);
+    const agent = getAgent(agentId);
+
+    const contents = [];
+    for (const m of state.messages) {
+      if (m.role === 'user') {
+        contents.push({ role: 'user', parts: [{ text: m.text }] });
+      } else if (m.role === 'agent') {
+        contents.push({ role: 'model', parts: [{ text: m.text }] });
+      }
+    }
+
+    hideTyping();
+    const reply = await callGemini(contents, agent.prompt);
+    addMessage('agent', reply, agentId);
+  } catch (err) {
+    hideTyping();
+    addMessage('agent', `Je suis désolé — I'm having trouble connecting right now. ${err.message.includes('API key') ? 'Please check your API key in the bar above.' : 'Please try again in a moment.'}`, 'concierge');
+    state.currentAgent = 'concierge';
+    updateAgentBadge('concierge');
+  }
+
+  state.processing = false;
+  sendBtn.disabled = false;
+  input.disabled = false;
+  input.focus();
+}
+
+// ─── WELCOME ─────────────────────────────────────────────
+function showWelcome() {
+  addMessage('agent',
+    'Welcome to Maison Chef at Home. I\'m Le Concierge, your personal liaison to a team of five expert chefs and coordinators. Whether you need to adjust guest numbers, update dietary preferences, explore our menus, or simply ask a question — I\'m here to make everything effortless. How may I assist you today?',
+    'concierge'
+  );
+}
+
+// ─── INIT ────────────────────────────────────────────────
+function init() {
+  if (state.apiKey) {
+    apiInput.value = state.apiKey;
+    apiStatus.textContent = '✓ Key saved';
+    apiStatus.className = 'status ok';
+  }
+  if (state.messages.length === 0) showWelcome();
+  updateAgentBadge(state.currentAgent);
+  render();
+}
+
+// ─── EVENT BINDING ───────────────────────────────────────
+sendBtn.addEventListener('click', () => handleSend(input.value));
+input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(input.value); } });
+
+apiBtn.addEventListener('click', () => {
+  const key = apiInput.value.trim();
+  if (!key) { apiStatus.textContent = 'Enter a key'; apiStatus.className = 'status err'; return; }
+  state.apiKey = key;
+  localStorage.setItem('mch-api-key', key);
+  apiStatus.textContent = '✓ Key saved';
+  apiStatus.className = 'status ok';
+});
+
+clearBtn.addEventListener('click', () => {
+  if (!confirm('Clear all messages?')) return;
+  state.messages = [];
+  state.currentAgent = 'concierge';
+  updateAgentBadge('concierge');
+  render();
+  showWelcome();
+});
+
+quickBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const prompts = {
+      guests: 'I need to change the number of guests for my booking',
+      dietary: 'I have some dietary requirements I need to update',
+      timing: 'I need to adjust the timing of my booking',
+      menu: 'Can you help me plan the menu?',
+      cancel: 'I need to discuss cancelling my booking'
+    };
+    const text = prompts[btn.dataset.action] || '';
+    if (text) handleSend(text);
+  });
+});
+
+init();
+</script>
+</body>
+</html>
